@@ -2,6 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useContext, useState } from "react";
 import {
+  ActivityIndicator,
   Button,
   SafeAreaView,
   StyleSheet,
@@ -12,19 +13,32 @@ import {
 } from "react-native";
 import { AuthContext } from "../../contexts/AuthContext";
 import { StackParamsList } from "../../routes/app.routes";
+import { api } from "../../services/api";
 
 export default function Dashboard() {
   const { signOut } = useContext(AuthContext);
   const [number, setNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigation =
     useNavigation<NativeStackNavigationProp<StackParamsList>>();
 
   async function openOrder() {
+    setLoading(true);
     if (number === "") {
       return;
     }
+    try {
+      const res = await api.post("/order", { table: Number(number) });
 
-    navigation.navigate("Order", { number, order_id: "" });
+      navigation.navigate("Order", { number, order_id: res.data.id });
+    } catch (err) {
+      console.log(err);
+      setLoading(false);
+    }
+
+    setNumber("");
+    setLoading(false);
   }
 
   return (
@@ -39,7 +53,11 @@ export default function Dashboard() {
         onChangeText={setNumber}
       ></TextInput>
       <TouchableOpacity style={styles.button} onPress={openOrder}>
-        <Text style={styles.buttonText}>Abrir Mesa</Text>
+        {loading ? (
+          <ActivityIndicator size={25} color="#fff"></ActivityIndicator>
+        ) : (
+          <Text style={styles.buttonText}>Abrir Mesa</Text>
+        )}
       </TouchableOpacity>
     </SafeAreaView>
   );
